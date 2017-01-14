@@ -65,8 +65,6 @@ class PaystationPayment extends SaltedPaymentModel
 
         $this->ProcessedAt = date("Y-m-d H:i:s");
         $this->write();
-        if (!empty($this->OrderID)) {
-            $this->Order()->write();
-        }
+        $this->notify_order();
     }
 }

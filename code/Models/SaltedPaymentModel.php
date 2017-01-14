@@ -161,10 +161,24 @@ class SaltedPaymentModel extends DataObject
     public function Order()
     {
         if (!empty($this->OrderClass) && !empty($this->OrderID)) {
+            $parent_class = get_parent_class($this->OrderClass);
+            if ($parent_class == 'Page' || $parent_class == 'SiteTree') {
+                return Versioned::get_by_stage($this->OrderClass, 'Stage')->byID($this->OrderID);
+            }
+
             return DataObject::get_by_id($this->OrderClass, $this->OrderID);
         }
 
         return null;
+    }
+
+    public function notify_order()
+    {
+        if (!empty($this->OrderID) && !empty($this->OrderClass)) {
+            if (method_exists($this->OrderClass, 'onSaltedPaymentUpdate')) {
+                $this->Order()->onSaltedPaymentUpdate($this->Status == 'Success' ? true : false);
+            }
+        }
     }
 
 }

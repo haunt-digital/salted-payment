@@ -67,9 +67,7 @@ class PoliPayment extends SaltedPaymentModel
         $this->ProcessedAt = $data['EndDateTime'];
         $this->Status = $this->translate_state($data['TransactionStatusCode']);
         $this->write();
-        if (!empty($this->OrderID)) {
-            $this->Order()->write();
-        }
+        $this->notify_order();
     }
 
     private function translate_state($state)
