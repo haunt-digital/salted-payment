@@ -1,0 +1,8 @@
+---
+Name: saltedpaymentroutes
+#After: framework/routes#coreroutes
+---
+Director:
+  rules:
+    'salted-payment/poli-complete': 'PoliController'
+    'salted-payment/paystation-complete': 'PaystationController'

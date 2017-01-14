@@ -1,0 +1,30 @@
+---
+Name: 'saltedpayment'
+---
+Member:
+  extensions:
+    - StoredCreditcardExtension
+SaltedPayment:
+  DefaultCurrency: 'NZD'
+  DefaultOrderClass: 'Order'
+  MerchantSettings:
+    MerchantHomepageURL: "https://www.nzyogo.co.nz"
+    SuccessURL: "https://www.nzyogo.co.nz/cart/checkout/success"
+    FailureURL: "https://www.nzyogo.co.nz/cart/checkout/fail"
+    CancellationURL: "https://www.nzyogo.co.nz/cart/checkout/cancel"
+  PaymentGateways:
+    'POLi': 'https://poliapi.apac.paywithpoli.com/api/v2/Transaction/Initiate'
+    'Paystation': 'https://www.paystation.co.nz/direct/paystation.dll'
+  GatewaySettings:
+    POLi:
+        CERT: '/var/www/silverstripe/LEO/www/groupon/ca-bundle.crt'
+        CLIENTCODE: 'SS64006129'
+        AUTHCODE: 'sC9!J3FTfv9GB'
+    Paystation:
+        #HMacMode: '0',
+        #HMacSecret: '1rHH8jLWLnPBRTrH'
+        paystation: '_empty'
+        pstn_pi: '615684'
+        pstn_gi: 'PAYSTATION'
+        pstn_nr: 't'
+        pstn_tm: 't' #test mode
