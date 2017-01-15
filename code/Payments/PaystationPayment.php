@@ -66,13 +66,13 @@ class PaystationPayment extends SaltedPaymentModel
     public function notify($data)
     {
         if (empty($data['ec'])) {
-            $this->TransacID        =   $data['ti'];
-            $this->CardNumber       =   $data['cardno'];
-            $this->CardExpiry       =   $data['cardexp'];
-            $this->Status           =   'Success';
-            $this->Message          =   $data['em'];
+            $this->TransacID            =   $data['ti'];
+            $this->CardNumber           =   $data['cardno'];
+            $this->CardExpiry           =   $data['cardexp'];
+            $this->Status               =   'Success';
+            $this->Message              =   $data['em'];
         } else {
-            $this->ExceptionError   =   $data['em'];
+            $this->ExceptionError       =   $data['em'];
             if ($data['ec'] == 34) {
                 $this->Status           =   'CardSavedOnly';
             } else {
@@ -83,24 +83,10 @@ class PaystationPayment extends SaltedPaymentModel
         $this->ProcessedAt = date("Y-m-d H:i:s");
         $this->write();
         if (!empty($data['futurepaytoken']) && $this->ScheduleFuturePay) {
-            $this->create_card($data['cardno'], $data['cardexp'], $data['futurepaytoken']);
+            Paystation::create_card($data['cardno'], $data['cardexp'], $data['futurepaytoken'], $this->PaidByID);
             $this->create_next_payment($data['futurepaytoken']);
         }
         $this->notify_order();
-    }
-
-    private function create_card($cardno, $cardexp, $fp_token)
-    {
-        $card = StoredCreditcard::get()->filter(array('CardNumber' => $cardno, 'CardExpiry' => $cardexp))->first();
-        if (empty($card)) {
-            $card = new StoredCreditcard();
-            $card->CardNumber = $cardno;
-            $card->CardExpiry = $cardexp;
-        }
-
-        $card->FuturePayToken = $fp_token;
-        $card->MemberID = $this->PaidByID;
-        $card->write();
     }
 
     private function create_next_payment($fp_token)

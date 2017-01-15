@@ -87,6 +87,20 @@ class Paystation
         return $output;
     }
 
+    public static function create_card($cardno, $cardexp, $fp_token, $member_id)
+    {
+        $card = \StoredCreditcard::get()->filter(array('CardNumber' => $cardno, 'CardExpiry' => $cardexp))->first();
+        if (empty($card)) {
+            $card = new \StoredCreditcard();
+            $card->CardNumber = $cardno;
+            $card->CardExpiry = $cardexp;
+        }
+
+        $card->FuturePayToken = $fp_token;
+        $card->MemberID = $member_id;
+        $card->write();
+    }
+
     public static function fetch($token)
     {
 

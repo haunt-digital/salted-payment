@@ -19,6 +19,7 @@ class StoredCreditcard extends DataObject
      * @var array
      */
     private static $summary_fields = array(
+        'getCardType'       =>  'Card type',
         'CardNumber'        =>  'Card number',
         'formated_expiry'   =>  'Expiry',
         'isPrimary'         =>  'Primary'
@@ -69,4 +70,31 @@ class StoredCreditcard extends DataObject
 
         return $month . $separator . $year;
     }
+
+    public function isMastercard()
+    {
+        $prefix = substr($this->CardNumber, 0, 2);
+        $prefix = (int) $prefix;
+        return $prefix >= 50 && $prefix <= 55;
+
+    }
+
+    public function isVisa()
+    {
+        return substr($this->CardNumber, 0, 1) == 4;
+    }
+
+    public function getCardType()
+    {
+        if ($this->isMastercard()) {
+            return 'master';
+        }
+
+        if ($this->isVisa()) {
+            return 'visa';
+        }
+
+        return 'unknown';
+    }
+
 }
