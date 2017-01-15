@@ -82,9 +82,8 @@ class PaystationPayment extends SaltedPaymentModel
 
         $this->ProcessedAt = date("Y-m-d H:i:s");
         $this->write();
-        if (!empty($data['futurepaytoken'])) {
+        if (!empty($data['futurepaytoken']) && $this->ScheduleFuturePay) {
             $this->create_card($data['cardno'], $data['cardexp'], $data['futurepaytoken']);
-
             $this->create_next_payment($data['futurepaytoken']);
         }
         $this->notify_order();
