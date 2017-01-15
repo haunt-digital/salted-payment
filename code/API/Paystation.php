@@ -43,9 +43,8 @@ class Paystation
 
         if (!empty($register_future_pay)) {
             $params['pstn_fp']      =   't';
-            if (!empty($immediate_future_pay)) {
+            if (empty($immediate_future_pay)) {
                 unset($params['pstn_am']);
-                unset($params['pstn_af']);
                 $params['pstn_fs']  =   't';
             }
         }

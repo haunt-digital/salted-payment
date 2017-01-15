@@ -12,6 +12,8 @@ SaltedPayment:
     SuccessURL: "https://www.nzyogo.co.nz/cart/checkout/success"
     FailureURL: "https://www.nzyogo.co.nz/cart/checkout/fail"
     CancellationURL: "https://www.nzyogo.co.nz/cart/checkout/cancel"
+    CardSavedURL: "https://www.nzyogo.co.nz/cart/checkout/saved"
+    PaymentScheduledURL: "https://www.nzyogo.co.nz/cart/checkout/pending"
   PaymentGateways:
     'POLi': 'https://poliapi.apac.paywithpoli.com/api/v2/Transaction/Initiate'
     'Paystation': 'https://www.paystation.co.nz/direct/paystation.dll'

@@ -10,7 +10,7 @@ class SaltedPaymentModel extends DataObject
      * Pending: Payment awaiting receipt/bank transfer etc
      */
     protected static $db = array(
-        'Status'            =>  "Enum('Incomplete,Success,Failure,Pending,Cancelled','Incomplete')",
+        'Status'            =>  "Enum('Incomplete,Success,Failure,Pending,Cancelled,CardSavedOnly','Incomplete')",
         'Amount'            =>  'Money',
         'Message'           =>  'Text',
         'IP'                =>  'Varchar',
@@ -177,7 +177,7 @@ class SaltedPaymentModel extends DataObject
         if (!empty($this->OrderID) && !empty($this->OrderClass)) {
             $order = $this->Order();
             try {
-                $order->onSaltedPaymentUpdate($this->Status == 'Success' ? true : false);
+                $order->onSaltedPaymentUpdate($this->Status == 'Success' || $this->Status == 'Pending' ? true : false);
             } catch (Exception $e) {
                 SS_Log::log('Class: ' . $this->OrderClass . ' has no method: onSaltedPaymentUpdate', SS_Log::WARN);
             }

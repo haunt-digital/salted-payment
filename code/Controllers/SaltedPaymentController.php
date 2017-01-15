@@ -16,6 +16,10 @@ class SaltedPaymentController extends ContentController
             $url['url'] = SaltedPayment::get_merchant_setting('SuccessURL');
         } elseif ($state == 'Cancelled') {
             $url['url'] = SaltedPayment::get_merchant_setting('CancellationURL');
+        } elseif ($state == 'CardSavedOnly') {
+            $url['url'] = SaltedPayment::get_merchant_setting('CardSavedURL');
+        } elseif ($state == 'Pending') {
+            $url['url'] = SaltedPayment::get_merchant_setting('PaymentScheduledURL');
         } else {
             $url['url'] = SaltedPayment::get_merchant_setting('FailureURL');
         }

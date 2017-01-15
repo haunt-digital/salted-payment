@@ -12,7 +12,18 @@ class PaystationPayment extends SaltedPaymentModel
         'MerchantSession'   =>  'Varchar(64)',
         'TransacID'         =>  'Varchar(64)',
         'CardNumber'        =>  'Varchar(32)',
-        'CardExpiry'        =>  'Varchar(8)'
+        'CardExpiry'        =>  'Varchar(8)',
+        'ScheduleFuturePay' =>  'Boolean',
+        'NextPayDate'       =>  'Date',
+        'PaymentFrequency'  =>  'Int'
+    );
+
+    /**
+     * Define the default values for all the $db fields
+     * @var array
+     */
+    private static $defaults = array(
+        'ScheduleFuturePay' =>  false
     );
 
     /**
@@ -21,7 +32,9 @@ class PaystationPayment extends SaltedPaymentModel
     public function onBeforeWrite()
     {
         parent::onBeforeWrite();
-        $this->MerchantSession = sha1(session_id() . '-' . round(microtime(true) * 1000));
+        if (empty($this->MerchantSession)) {
+            $this->MerchantSession = sha1(session_id() . '-' . round(microtime(true) * 1000));
+        }
     }
 
     /**
@@ -30,24 +43,24 @@ class PaystationPayment extends SaltedPaymentModel
     public function onAfterWrite()
     {
         parent::onAfterWrite();
-        if (empty($this->ProcessedAt)) {
+        if (empty($this->ProcessedAt) && ($this->Status == 'Incomplete' || empty($this->Status))) {
             $this->process();
         }
     }
 
     public function process()
     {
-        $order = $this->Order();
+        if (empty($this->ID)) {
+            return;
+        }
 
-        // $result = Poli::process($order->AmountDue, $order->FullRef);
-        // Debugger::inspect($result);
-        $pay_link = Paystation::process($this->Amount->Amount, $order->FullRef, $this->MerchantSession);
+        $order = $this->Order();
+        $pay_link = Paystation::process($this->Amount->Amount, $order->FullRef, $this->MerchantSession, $this->ScheduleFuturePay);
         if (!empty($pay_link)) {
             if ($controller = Controller::curr()) {
                 return $controller->redirect($pay_link);
             }
         }
-        Debugger::inspect($pay_link);
     }
 
     public function notify($data)
@@ -60,11 +73,57 @@ class PaystationPayment extends SaltedPaymentModel
             $this->Message          =   $data['em'];
         } else {
             $this->ExceptionError   =   $data['em'];
-            $this->Status           =   'Failure';
+            if ($data['ec'] == 34) {
+                $this->Status           =   'CardSavedOnly';
+            } else {
+                $this->Status           =   'Failure';
+            }
         }
 
         $this->ProcessedAt = date("Y-m-d H:i:s");
         $this->write();
+        if (!empty($data['futurepaytoken'])) {
+            $this->create_card($data['cardno'], $data['cardexp'], $data['futurepaytoken']);
+
+            $this->create_next_payment($data['futurepaytoken']);
+        }
         $this->notify_order();
+    }
+
+    private function create_card($cardno, $cardexp, $fp_token)
+    {
+        $card = StoredCreditcard::get()->filter(array('CardNumber' => $cardno, 'CardExpiry' => $cardexp))->first();
+        if (empty($card)) {
+            $card = new StoredCreditcard();
+            $card->CardNumber = $cardno;
+            $card->CardExpiry = $cardexp;
+        }
+
+        $card->FuturePayToken = $fp_token;
+        $card->MemberID = $this->PaidByID;
+        $card->write();
+    }
+
+    private function create_next_payment($fp_token)
+    {
+        $scheduled_payment = new Payment();
+        $scheduled_payment->ScheduleFuturePay = true;
+        $scheduled_payment->Status = 'Pending';
+        $scheduled_payment->Amount->Amount = $this->Amount->Amount;
+        $scheduled_payment->OrderClass = $this->OrderClass;
+        $scheduled_payment->OrderID = $this->OrderID;
+        $scheduled_payment->PaymentFrequency = $this->PaymentFrequency;
+        $today = date("Y-m-d 00:00:00");
+        $scheduled_payment->NextPayDate = date('Y-m-d', strtotime($today. ' + ' . $scheduled_payment->PaymentFrequency . ' days'));
+        $scheduled_payment->write();
+    }
+
+    public function slient_process($enforce = false)
+    {
+        // todo
+        /*
+        1. get token from the stored creditcard. if not found, return
+        2. compose link
+        */
     }
 }
