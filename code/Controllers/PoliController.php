@@ -3,7 +3,7 @@ use SaltedHerring\Debugger;
 use SaltedHerring\SaltedPayment;
 use SaltedHerring\Utilities;
 use SaltedHerring\SaltedPayment\API\Poli;
-class PoliController extends ContentController
+class PoliController extends SaltedPaymentController
 {
     public function index($request)
     {
@@ -22,37 +22,12 @@ class PoliController extends ContentController
         $this->update_payment($token);
     }
 
-    private function route($result)
+    protected function update_payment($data)
     {
-        $state = $result['state'];
-        $orderID = $result['order_id'];
-
-        $url = array();
-
-        if ($state == 'Completed') {
-            $url['url'] = SaltedPayment::get_merchant_setting('SuccessURL');
-            $url = Utilities::LinkThis($url, 'order_id', $orderID);
-        } elseif ($state == 'Cancelled') {
-            $url['url'] = SaltedPayment::get_merchant_setting('CancellationURL');
-            $url = Utilities::LinkThis($url, 'order_id', $orderID);
-        } else {
-            $url['url'] = SaltedPayment::get_merchant_setting('FailureURL');
-            $url = Utilities::LinkThis($url, 'order_id', $orderID);
-        }
-
-        return $this->redirect($url);
-    }
-
-    private function update_payment($token)
-    {
-        $result = Poli::fetch($token);
+        $result = Poli::fetch($data);
         $payment = SaltedPaymentModel::get()->filter(array('OrderRef' => $result['MerchantReference']))->first();
         // SS_Log::log($token, SS_Log::WARN);
         $payment->notify($result);
-
-        return array(
-                    'state' => !empty($result['TransactionStatusCode']) ? trim($result['TransactionStatusCode']) : 'Failed',
-                    'order_id' => $payment->OrderID
-                );
+        return $this->route_data($payment->Status, $payment->OrderClass, $payment->OrderID);
     }
 }

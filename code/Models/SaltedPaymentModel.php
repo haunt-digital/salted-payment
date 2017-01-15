@@ -175,8 +175,11 @@ class SaltedPaymentModel extends DataObject
     public function notify_order()
     {
         if (!empty($this->OrderID) && !empty($this->OrderClass)) {
-            if (method_exists($this->OrderClass, 'onSaltedPaymentUpdate')) {
-                $this->Order()->onSaltedPaymentUpdate($this->Status == 'Success' ? true : false);
+            $order = $this->Order();
+            try {
+                $order->onSaltedPaymentUpdate($this->Status == 'Success' ? true : false);
+            } catch (Exception $e) {
+                SS_Log::log('Class: ' . $this->OrderClass . ' has no method: onSaltedPaymentUpdate', SS_Log::WARN);
             }
         }
     }
