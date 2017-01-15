@@ -20,7 +20,7 @@ class StoredCreditcard extends DataObject
      */
     private static $summary_fields = array(
         'CardNumber'        =>  'Card number',
-        'CardExpiry'        =>  'Expiry',
+        'formated_expiry'   =>  'Expiry',
         'isPrimary'         =>  'Primary'
     );
 
@@ -43,5 +43,30 @@ class StoredCreditcard extends DataObject
         } elseif ($this->Member()->Creditcards()->filter(array('isPrimary' => true))->count() == 0) {
             $this->isPrimary = true;
         }
+    }
+
+    public function getYear()
+    {
+        $expiry = $this->CardExpiry;
+        $year = substr($expiry, 0, 2);
+
+        return $year;
+    }
+
+    public function getMonth()
+    {
+        $expiry = $this->CardExpiry;
+        $month = substr($expiry, 2, 2);
+
+        return $month;
+    }
+
+    public function formated_expiry($separator = '/')
+    {
+        $expiry = $this->CardExpiry;
+        $year = substr($expiry, 0, 2);
+        $month = substr($expiry, 2, 2);
+
+        return $month . $separator . $year;
     }
 }
