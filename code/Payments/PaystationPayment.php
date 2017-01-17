@@ -65,7 +65,7 @@ class PaystationPayment extends SaltedPaymentModel
 
     public function notify($data)
     {
-        if (empty($data['ec'])) {
+        if (empty($data['ec']) || $data['ec'] == '0') {
             $this->TransacID            =   $data['ti'];
             $this->CardNumber           =   $data['cardno'];
             $this->CardExpiry           =   $data['cardexp'];
@@ -89,9 +89,9 @@ class PaystationPayment extends SaltedPaymentModel
         $this->notify_order();
     }
 
-    private function create_next_payment($fp_token)
+    protected function create_next_payment($fp_token, $scheduled_payment = null)
     {
-        $scheduled_payment = new Payment();
+        $scheduled_payment = empty($scheduled_payment) ? new PaystationPayment() : $scheduled_payment;
         $scheduled_payment->ScheduleFuturePay = true;
         $scheduled_payment->Status = 'Pending';
         $scheduled_payment->Amount->Amount = $this->Amount->Amount;

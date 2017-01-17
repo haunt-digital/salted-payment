@@ -8,8 +8,38 @@ class PaystationController extends SaltedPaymentController
     public function index($request)
     {
         if ($request->isPost()) {
-            SS_Log::log($_SERVER['REQUEST_METHOD'] . '::::::' . $request->getBody(), SS_Log::WARN);
+            // SS_Log::log($_SERVER['REQUEST_METHOD'] . '::::::' . $request->getBody(), SS_Log::WARN);
+            try {
+                $xmlData = new SimpleXMLElement($request->getBody());
+                // SS_Log::log("\n[PAYSTATION]\nMS: " . $xmlData->MerchantSession . "\n", SS_Log::WARN);
+                // SS_Log::log("\n\n\n\n\n[PAYSTATION]\n" . $request->getBody() . "\n", SS_Log::WARN);
+                $data = array(
+                    'ms'            =>  (string) $xmlData->MerchantSession,
+                    'ti'            =>  (string) $xmlData->TransactionID,
+                    'am'            =>  (string) $xmlData->PurchaseAmount,
+                    'ec'            =>  (string) $xmlData->ec,
+                    'em'            =>  (string) $xmlData->em,
+                    'cardno'        =>  (string) $xmlData->CardNo,
+                    'cardexp'       =>  (string) $xmlData->CardExpiry,
+                    'merchant_ref'  =>  (string) $xmlData->MerchantReference
+                );
+
+                // foreach ($data as $key => $value)
+                // {
+                //     SS_Log::log("\n[".$key."] " . $value . "\n", SS_Log::WARN);
+                // }
+
+                if ($xmlData->FuturePaymentToken) {
+                    $data['futurepaytoken'] = (string) $xmlData->FuturePaymentToken;
+                }
+
+                $this->update_payment($data);
+            } catch (Exception $e) {
+                SS_Log::log("[PAYSTATION]\n" . $request->getBody(), SS_Log::WARN);
+            }
+            //SS_Log::log($_SERVER['REQUEST_METHOD'] . '::::::' . $xmlData->em, SS_Log::WARN);
         } else {
+            // Debugger::inspect($request->getVars());
             $result = $this->update_payment($request->getVars());
             $this->route($result);
         }
