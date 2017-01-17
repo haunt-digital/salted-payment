@@ -65,28 +65,30 @@ class PaystationPayment extends SaltedPaymentModel
 
     public function notify($data)
     {
-        if (empty($data['ec']) || $data['ec'] == '0') {
-            $this->TransacID            =   $data['ti'];
-            $this->CardNumber           =   $data['cardno'];
-            $this->CardExpiry           =   $data['cardexp'];
-            $this->Status               =   'Success';
-            $this->Message              =   $data['em'];
-        } else {
-            $this->ExceptionError       =   $data['em'];
-            if ($data['ec'] == 34) {
-                $this->Status           =   'CardSavedOnly';
+        if ($this->Status == 'Incomplete' || empty($this->Status)) {
+            if (empty($data['ec']) || $data['ec'] == '0') {
+                $this->TransacID            =   $data['ti'];
+                $this->CardNumber           =   $data['cardno'];
+                $this->CardExpiry           =   $data['cardexp'];
+                $this->Status               =   'Success';
+                $this->Message              =   $data['em'];
             } else {
-                $this->Status           =   'Failure';
+                $this->ExceptionError       =   $data['em'];
+                if ($data['ec'] == 34) {
+                    $this->Status           =   'CardSavedOnly';
+                } else {
+                    $this->Status           =   'Failure';
+                }
             }
-        }
 
-        $this->ProcessedAt = date("Y-m-d H:i:s");
-        $this->write();
-        if (!empty($data['futurepaytoken']) && $this->ScheduleFuturePay) {
-            Paystation::create_card($data['cardno'], $data['cardexp'], $data['futurepaytoken'], $this->PaidByID);
-            $this->create_next_payment($data['futurepaytoken']);
+            $this->ProcessedAt = date("Y-m-d H:i:s");
+            $this->write();
+            if (!empty($data['futurepaytoken']) && $this->ScheduleFuturePay) {
+                Paystation::create_card($data['cardno'], $data['cardexp'], $data['futurepaytoken'], $this->PaidByID);
+                $this->create_next_payment($data['futurepaytoken']);
+            }
+            $this->notify_order();
         }
-        $this->notify_order();
     }
 
     protected function create_next_payment($fp_token, $scheduled_payment = null)
@@ -98,6 +100,7 @@ class PaystationPayment extends SaltedPaymentModel
         $scheduled_payment->OrderClass = $this->OrderClass;
         $scheduled_payment->OrderID = $this->OrderID;
         $scheduled_payment->PaymentFrequency = $this->PaymentFrequency;
+        $scheduled_payment->PaidByID = $this->PaidByID;
         $today = date("Y-m-d 00:00:00");
         $scheduled_payment->NextPayDate = date('Y-m-d', strtotime($today. ' + ' . $scheduled_payment->PaymentFrequency . ' days'));
         $scheduled_payment->write();
