@@ -10,7 +10,6 @@ class PaystationPayment extends SaltedPaymentModel
      */
     protected static $db = array(
         'MerchantSession'   =>  'Varchar(64)',
-        'TransacID'         =>  'Varchar(64)',
         'CardNumber'        =>  'Varchar(32)',
         'CardExpiry'        =>  'Varchar(8)',
         'ScheduleFuturePay' =>  'Boolean',

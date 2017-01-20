@@ -4,7 +4,7 @@ use SaltedHerring\SaltedPayment;
 use SaltedHerring\Debugger as Debugger;
 class Poli
 {
-    public static function process($price, $ref)
+    public static function process($price, $ref, $order_class = null)
     {
         //Debugger::inspect($order);
         /*
@@ -27,6 +27,7 @@ class Poli
         $json_builder = '{
             "Amount":"' . $price . '",
             "CurrencyCode":"NZD",
+            "MerchantData": "' . (!empty($order_class) ? $order_class : SaltedPayment::get_default_order_class()) . '",
             "MerchantReference":"' . $ref . '",
             "MerchantHomepageURL":"' . $returnurl . '",
             "SuccessURL":"' . $returnurl . '",

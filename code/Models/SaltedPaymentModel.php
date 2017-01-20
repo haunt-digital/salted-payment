@@ -10,6 +10,7 @@ class SaltedPaymentModel extends DataObject
      * Pending: Payment awaiting receipt/bank transfer etc
      */
     protected static $db = array(
+        'TransacID'         =>  'Varchar(128)',
         'Status'            =>  "Enum('Incomplete,Success,Failure,Pending,Cancelled,CardSavedOnly','Incomplete')",
         'Amount'            =>  'Money',
         'Message'           =>  'Text',

@@ -9,7 +9,6 @@ class PoliPayment extends SaltedPaymentModel
      * @var array
      */
     protected static $db = array(
-        'TransactionRefNo'          =>  'Varchar(128)',
         'PayerAcctSortCode'         =>  'Varchar(32)',
         'PayerAcctNumber'           =>  'Varchar(32)',
         'PayerAcctSuffix'           =>  'Varchar(8)',
@@ -29,13 +28,17 @@ class PoliPayment extends SaltedPaymentModel
     public function onAfterWrite()
     {
         parent::onAfterWrite();
-        if (empty($this->ProcessedAt)) {
+        if (empty($this->ProcessedAt) && ($this->Status == 'Incomplete' || empty($this->Status))) {
             $this->process();
         }
     }
 
     public function process()
     {
+        if (empty($this->ID)) {
+            return;
+        }
+
         $order = $this->Order();
 
         // $result = Poli::process($order->AmountDue, $order->FullRef);
@@ -63,7 +66,7 @@ class PoliPayment extends SaltedPaymentModel
             }
             // SS_Log::log($key . '::' . $this->$key, SS_Log::WARN);
         }
-
+        $this->TransacID = $data['TransactionRefNo'];
         $this->ProcessedAt = $data['EndDateTime'];
         $this->Status = $this->translate_state($data['TransactionStatusCode']);
         $this->write();

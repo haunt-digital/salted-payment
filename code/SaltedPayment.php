@@ -29,4 +29,9 @@ class SaltedPayment
         $settings = \Config::inst()->get('SaltedPayment', 'MerchantSettings');
         return $settings[$setting_name];
     }
+
+    public static function get_default_order_class()
+    {
+        return \Config::inst()->get('SaltedPayment', 'DefaultOrderClass');
+    }
 }

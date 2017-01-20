@@ -10,7 +10,7 @@ class PoliController extends SaltedPaymentController
         if (!$request->isPost()) {
             if ($token = $request->getVar('token')) {
                 $result = $this->update_payment($token);
-                $this->route($result);
+                return $this->route($result);
             }
         }
 
@@ -25,8 +25,29 @@ class PoliController extends SaltedPaymentController
     protected function update_payment($data)
     {
         $result = Poli::fetch($data);
-        $payment = SaltedPaymentModel::get()->filter(array('OrderRef' => $result['MerchantReference']))->first();
-        // SS_Log::log($token, SS_Log::WARN);
+        $payment = $this->existing_check($result['TransactionRefNo'], $result['MerchantReference']);
+
+        if (empty($payment)) {
+            // SS_Log::log("[" . $_SERVER['REQUEST_METHOD'] . "]POLi::::\n" . serialize($result), SS_Log::WARN);
+            $payment = SaltedPaymentModel::get()->filter(array('OrderRef' => $result['MerchantReference']))->where('Status IS NULL')->first();
+
+            if (empty($payment)) {
+
+                $order_class = $result['MerchantReferenceData'];
+                if ($order = DataObject::get_one($order_class, array('FullRef' => $result['MerchantReference']))) {
+                    $payment = new PoliPayment();
+                    $payment->PaidByID = $order->CustomerID;
+                    $payment->OrderClass = $order_class;
+                    $payment->OrderID = $order->ID;
+                    $payment->Amount->Amount = $result['AmountPaid'];
+                    $payment->ProcessedAt = $result['EndDateTime'];
+                    $payment->write();
+                } else {
+                    SS_Log::log("[" . $_SERVER['REQUEST_METHOD'] . "]POLi::::\n" . serialize($result), SS_Log::WARN);
+                    return $this->httpError(500, 'Order does not exist!');
+                }
+            }
+        }
         $payment->notify($result);
         return $this->route_data($payment->Status, $payment->OrderClass, $payment->OrderID);
     }

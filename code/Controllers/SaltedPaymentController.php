@@ -38,6 +38,11 @@ class SaltedPaymentController extends ContentController
                 );
     }
 
+    public function existing_check($transac_id, $order_ref)
+    {
+        return SaltedPaymentModel::get()->filter(array('TransacID' => $transac_id, 'OrderRef' => $order_ref))->first();
+    }
+
     protected function update_payment($data)
     {
         user_error("Please implement update_payment() on $this->class", E_USER_ERROR);
