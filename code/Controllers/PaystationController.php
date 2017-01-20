@@ -61,7 +61,7 @@ class PaystationController extends SaltedPaymentController
 
         }
 
-        return $this->route_data();
+        return $this->httpError(400, 'malformed data');
     }
 
     private function create_card($cardno, $cardexp, $fp_token)

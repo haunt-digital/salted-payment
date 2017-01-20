@@ -19,6 +19,10 @@ class PoliController extends SaltedPaymentController
             $token = $request->getVar('token');
         }
 
+        if (empty($token)) {
+            return $this->httpError(400, 'Token is missing');
+        }
+
         $this->update_payment($token);
     }
 
