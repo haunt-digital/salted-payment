@@ -58,7 +58,6 @@ class PaystationController extends SaltedPaymentController
                 Paystation::create_card($data['cardno'], $data['cardexp'], $data['futurepaytoken'], Member::currentUserID());
                 return $this->route_data('CardSavedOnly', 'Member', Member::currentUserID());
             }
-
         }
 
         return $this->httpError(400, 'malformed data');
