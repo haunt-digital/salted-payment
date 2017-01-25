@@ -40,6 +40,17 @@ class PaystationController extends SaltedPaymentController
             //SS_Log::log($_SERVER['REQUEST_METHOD'] . '::::::' . $xmlData->em, SS_Log::WARN);
         } else {
             // Debugger::inspect($request->getVars());
+            /*
+            [url] => /salted-payment/paystation-complete
+            [ms] => 27b98051bab8c949d92278b060195bf14e192e87
+            [ti] => 0086146613-01
+            [am] => 7800
+            [ec] => 0
+            [em] => Transaction successful
+            [cardno] => 512345XXXXXXX346
+            [cardexp] => 1705
+            [merchant_ref] => 92be7f2fbbb2653c6a46fcf761af2713f7b3a003
+            */
             $result = $this->update_payment($request->getVars());
             $this->route($result);
         }
@@ -49,14 +60,24 @@ class PaystationController extends SaltedPaymentController
     protected function update_payment($data)
     {
         if (!empty($data['ms'])) {
-            if ($payment = PaystationPayment::get()->filter(array('MerchantSession' => $data['ms']))->first()) {
-                $payment->notify($data);
-                return $this->route_data($payment->Status, $payment->OrderClass, $payment->OrderID);
-            }
 
             if (!empty($data['ec']) && $data['ec'] == 34 && !empty(Member::currentUserID())) {
                 Paystation::create_card($data['cardno'], $data['cardexp'], $data['futurepaytoken'], Member::currentUserID());
                 return $this->route_data('CardSavedOnly', 'Member', Member::currentUserID());
+            }
+
+            if ($payment = PaystationPayment::get()->filter(array('MerchantSession' => $data['ms']))->first()) {
+                $payment->notify($data);
+                return $this->route_data($payment->Status, $payment->OrderClass, $payment->OrderID);
+            } else {
+                // $payment = new Payment();
+                // $payment->PaidByID = Member::currentUserID();
+                // $payment->ValidUntil = $property->ListingCloseOn;
+                //
+                // $payment->Amount->Amount = $amount;
+                // $payment->OrderClass = 'PropertyPage';
+                // $payment->OrderID = $property->ID;
+                // $payment->write();
             }
         }
 

@@ -54,7 +54,7 @@ class PaystationPayment extends SaltedPaymentModel
         }
 
         $order = $this->Order();
-        $pay_link = Paystation::process($this->Amount->Amount, $order->FullRef, $this->MerchantSession, $this->ScheduleFuturePay);
+        $pay_link = Paystation::process($this->Amount->Amount, $order->FullRef, $this->MerchantSession, $this->ScheduleFuturePay, true, $order->ClassName);
         if (!empty($pay_link)) {
             if ($controller = Controller::curr()) {
                 return $controller->redirect($pay_link);
