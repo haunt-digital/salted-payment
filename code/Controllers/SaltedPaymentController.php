@@ -10,7 +10,6 @@ class SaltedPaymentController extends ContentController
         $state = $result['state'];
         $orderID = $result['order_id'];
         $url = array();
-        $url['order_class'] = $result['order_class'];
 
         if ($state == 'Success') {
             $url['url'] = SaltedPayment::get_merchant_setting('SuccessURL');
@@ -29,22 +28,22 @@ class SaltedPaymentController extends ContentController
         return $this->redirect($url);
     }
 
-    protected function route_data($state = 'Failed', $order_class = null, $order_id = null)
+    protected function route_data($state = 'Failed', $order_id = null)
     {
         return array(
                     'state'         =>  $state,
-                    'order_class'   =>  $order_class,
                     'order_id'      =>  $order_id
                 );
     }
 
-    public function existing_check($transac_id, $order_ref)
+    protected function handle_postback($data)
     {
-        return SaltedPaymentModel::get()->filter(array('TransacID' => $transac_id, 'OrderRef' => $order_ref))->first();
+        user_error("Please implement handle_postback() on $this->class", E_USER_ERROR);
     }
 
-    protected function update_payment($data)
+    protected function getOrder($merchant_reference)
     {
-        user_error("Please implement update_payment() on $this->class", E_USER_ERROR);
+        $OrderClass = SaltedPayment::get_default_order_class();
+        return $OrderClass::get()->filter(array('MerchantReference' => $merchant_reference))->first();
     }
 }

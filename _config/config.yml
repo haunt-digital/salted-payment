@@ -6,7 +6,7 @@ Member:
     - StoredCreditcardExtension
 SaltedPayment:
   DefaultCurrency: 'NZD'
-  DefaultOrderClass: 'Order'
+  DefaultOrderClass: 'SaltedOrder'
   MerchantSettings:
     MerchantHomepageURL: "https://www.nzyogo.co.nz"
     SuccessURL: "https://www.nzyogo.co.nz/cart/checkout/success"

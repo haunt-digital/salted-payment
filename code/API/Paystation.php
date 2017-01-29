@@ -99,6 +99,7 @@ class Paystation
         $card->FuturePayToken = $fp_token;
         $card->MemberID = $member_id;
         $card->write();
+        return $card;
     }
 
     public static function fetch($token)
