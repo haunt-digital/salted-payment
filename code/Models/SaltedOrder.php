@@ -3,7 +3,7 @@ use SaltedHerring\Debugger;
 use SaltedHerring\Grid;
 use SaltedHerring\SaltedPayment;
 use SaltedHerring\SaltedPayment\API\Paystation;
-
+use SaltedHerring\SaltedPayment\API\Poli;
 class SaltedOrder extends DataObject
 {
     /**
@@ -46,7 +46,8 @@ class SaltedOrder extends DataObject
      */
     private static $summary_fields = array(
         'getStatus'             =>  'Open / Close',
-        'PayDate'               =>  'Pay date',
+        'PayDateDisplay'        =>  'Pay date',
+        'Amount'                =>  'Amount',
         'OutstandingBalance'    =>  'Outstanding Balance'
     );
 
@@ -215,7 +216,7 @@ class SaltedOrder extends DataObject
         if (empty($this->PayDate)) {
             return false;
         }
-        
+
         $now = new DateTime('NOW');
         $paydate = new DateTime($this->PayDate);
 
@@ -225,6 +226,16 @@ class SaltedOrder extends DataObject
     public function getStatus()
     {
         return $this->isOpen ? 'Open' : 'Close';
+    }
+
+    public function getSuccessPayment()
+    {
+        if ($payments = $this->Payments())
+        {
+            return $payments->filter(array('Status' =>  'Success'))->first();
+        }
+
+        return null;
     }
 
     public function OutstandingBalance()
@@ -238,6 +249,15 @@ class SaltedOrder extends DataObject
         }
 
         return '$' . number_format($amount, 2, '.', ',');;;
+    }
+
+    public function PayDateDisplay()
+    {
+        if ($this->isOpen) {
+            return '- not yet paid -';
+        }
+
+        return !empty($this->PayDate) ? $this->PayDate : $this->Created;
     }
 
     //static functions

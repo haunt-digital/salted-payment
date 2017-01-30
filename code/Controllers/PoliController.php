@@ -9,7 +9,7 @@ class PoliController extends SaltedPaymentController
     {
         if (!$request->isPost()) {
             if ($token = $request->getVar('token')) {
-                $result = $this->update_payment($token);
+                $result = $this->handle_postback($token);
                 return $this->route($result);
             }
         }
@@ -23,36 +23,44 @@ class PoliController extends SaltedPaymentController
             return $this->httpError(400, 'Token is missing');
         }
 
-        $this->update_payment($token);
+        $this->handle_postback($token);
     }
 
-    protected function update_payment($data)
+    protected function handle_postback($data)
     {
         $result = Poli::fetch($data);
-        $payment = $this->existing_check($result['TransactionRefNo'], $result['MerchantReference']);
+        // Debugger::inspect($result);
+        if ($Order = $this->getOrder($result['MerchantReference'])) {
+            if ($Order->isOpen) {
 
-        if (empty($payment)) {
-            // SS_Log::log("[" . $_SERVER['REQUEST_METHOD'] . "]POLi::::\n" . serialize($result), SS_Log::WARN);
-            $payment = SaltedPaymentModel::get()->filter(array('OrderRef' => $result['MerchantReference']))->where('Status IS NULL')->first();
+                if (!empty($Order->RecursiveFrequency)) {
+                    $today = date("Y-m-d 00:00:00");
+                    $Order->ValidUntil = date('Y-m-d', strtotime($today. ' + ' . $Order->RecursiveFrequency . ' days'));
+                }
 
-            if (empty($payment)) {
+                if ($result['TransactionStatusCode'] == 'Status') {
+                    $Order->isOpen = false;
+                    $Order->write();
+                }
 
-                $order_class = $result['MerchantReferenceData'];
-                if ($order = DataObject::get_one($order_class, array('FullRef' => $result['MerchantReference']))) {
-                    $payment = new PoliPayment();
-                    $payment->PaidByID = $order->CustomerID;
-                    $payment->OrderClass = $order_class;
-                    $payment->OrderID = $order->ID;
-                    $payment->Amount->Amount = $result['AmountPaid'];
-                    $payment->ProcessedAt = $result['EndDateTime'];
-                    $payment->write();
-                } else {
-                    SS_Log::log("[" . $_SERVER['REQUEST_METHOD'] . "]POLi::::\n" . serialize($result), SS_Log::WARN);
-                    return $this->httpError(500, 'Order does not exist!');
+                $payment = new PoliPayment();
+                $payment->MerchantReference = $Order->MerchantReference;
+                $payment->PaidByID = $Order->CustomerID;
+                $payment->Amount->Currency = $Order->Amount->Currency;
+                $payment->IP = $Order->PaidFromIP;
+                $payment->ProxyIP = $Order->PaidFromProxyIP;
+                $payment->Amount->Amount = $result['AmountPaid'];
+                $payment->notify($result);
+
+            } elseif ($payments = $Order->Payments()) {
+                $payment = $payments->filter(array('MerchantReference' => $result['MerchantReference'], 'TransacID' => $result['TransactionRefNo']))->first();
+                if (empty($payment)) {
+                    return $this->httpError(400, 'cannot find the payment with the given merchant reference');
                 }
             }
+
+            $Order->onSaltedPaymentUpdate($payment->Status);
         }
-        $payment->notify($result);
-        return $this->route_data($payment->Status, $payment->OrderClass, $payment->OrderID);
+        return $this->route_data($payment->Status, $Order->ID);
     }
 }

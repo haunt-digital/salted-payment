@@ -18,43 +18,8 @@ class PoliPayment extends SaltedPaymentModel
         'MerchantAcctSuffix'        =>  'Varchar(8)',
         'BankReceipt'               =>  'Varchar(64)',
         'ErrorCode'                 =>  'Varchar(32)',
-        'FinancialInstitutionName'  =>  'Varchar(256)',
-        'MerchantReference'         =>  'Varchar(64)'
+        'FinancialInstitutionName'  =>  'Varchar(256)'
     );
-
-    /**
-     * Event handler called after writing to the database.
-     */
-    public function onAfterWrite()
-    {
-        parent::onAfterWrite();
-        if (empty($this->ProcessedAt) && ($this->Status == 'Incomplete' || empty($this->Status))) {
-            $this->process();
-        }
-    }
-
-    public function process()
-    {
-        if (empty($this->ID)) {
-            return;
-        }
-
-        $order = $this->Order();
-
-        // $result = Poli::process($order->AmountDue, $order->FullRef);
-        // Debugger::inspect($result);
-        //SS_Log::log($this->Amount->Amount, SS_Log::WARN);
-        $result = Poli::process($this->Amount->Amount, $order->FullRef);
-        if (!empty($result['Success']) && !empty($result['NavigateURL'])) {
-            //$this->controller->redirect($result['NavigateURL']);
-            if ($controller = Controller::curr()) {
-                $controller->redirect($result['NavigateURL']);
-            }
-        } elseif (!empty($result['ErrorCode']) && !empty($result['ErrorMessage'])) {
-            Debugger::inspect($result);
-            //$this->handleError($result['ErrorMessage']);
-        }
-    }
 
     public function notify($data)
     {
@@ -67,10 +32,8 @@ class PoliPayment extends SaltedPaymentModel
             // SS_Log::log($key . '::' . $this->$key, SS_Log::WARN);
         }
         $this->TransacID = $data['TransactionRefNo'];
-        $this->ProcessedAt = $data['EndDateTime'];
         $this->Status = $this->translate_state($data['TransactionStatusCode']);
         $this->write();
-        $this->notify_order();
     }
 
     private function translate_state($state)

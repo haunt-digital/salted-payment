@@ -51,6 +51,7 @@ class PaystationController extends SaltedPaymentController
             }
 
             if ($Order = $this->getOrder($data['merchant_ref'])) {
+
                 if ($Order->isOpen) {
                     $payment = new PaystationPayment();
                     $payment->MerchantReference = $Order->MerchantReference;
@@ -62,14 +63,14 @@ class PaystationController extends SaltedPaymentController
 
                     if (empty($data['ec']) || $data['ec'] == '0') {
 
-                        $Order->isOpen                          =   false;
-
                         if (!empty($Order->RecursiveFrequency)) {
                             $today = date("Y-m-d 00:00:00");
                             $Order->ValidUntil                  =   date('Y-m-d', strtotime($today. ' + ' . $Order->RecursiveFrequency . ' days'));
                         }
 
+                        $Order->isOpen                          =   false;
                         $Order->write();
+
                         $payment->TransacID                     =   $data['ti'];
                         $payment->Amount->Amount                =   ((float) $data['am']) * 0.01;
                         $payment->CardNumber                    =   $data['cardno'];
@@ -102,13 +103,16 @@ class PaystationController extends SaltedPaymentController
                     }
 
                     $payment->write();
-                    $Order->onSaltedPaymentUpdate($payment->Status);
+
                 } elseif ($payments = $Order->Payments()) {
                     $payment = $payments->filter(array('MerchantSession' => $data['ms']))->first();
                     if (empty($payment)) {
                         return $this->httpError(400, 'cannot find the payment with the given merchant session');
                     }
                 }
+
+
+                $Order->onSaltedPaymentUpdate($payment->Status);
 
                 return $this->route_data($payment->Status, $Order->ID);
             }
