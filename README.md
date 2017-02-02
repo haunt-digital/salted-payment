@@ -4,20 +4,17 @@ Supported payment methods
 - POLi Payment
 - Paystation Payment
 
-Proactive and Passive modes
-- proactive: create payment object first in the DB, and then wait for the remote payment gateway's postback to update its status. If you are using this method, please make sure you write your own task to remove expired payment objects.
-- passive: create no payment object until remote payment gateway posts back.
-
 Usage:
-- POLi
-Passive:
-< inside a controller class >
-$order = <<the order object that the customer is paying for>>;
-$poli = Poli::process($amount_due, $order->FullRef, 'Order');
-if (empty($poli['Success'])) {
-    return $this->httpError(500, $poli['ErrorMessage']);
-}
-if (empty($poli['NavigateURL'])) {
-    return $this->httpError(500, 'Unknown payment gateway error.');
-}
-return $this->controller->redirect($poli['NavigateURL']);
+First thing: make sure the class that you use as "order" extends SaltedOrder class
+
+== One off payment ==
+$order = {THE_ORDER_OBJECT};
+return $order->Pay({STRING_OF_PAYMENT_METHOD}); // you will be redirected to the payment page
+
+== Pay and also setup a future payment ==
+
+$order = {THE_ORDER_OBJECT};
+$order->RecursiveFrequency = {INT_EVERY_X_DAYS_IT_PAYS};
+return $order->Pay({STRING_OF_PAYMENT_METHOD}, true); // you will be redirected to the payment page
+
+ps: you will need to write your own dev task and setup cron jobs
