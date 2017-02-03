@@ -31,6 +31,10 @@ class PoliController extends SaltedPaymentController
         $result = Poli::fetch($data);
         // Debugger::inspect($result);
         if ($Order = $this->getOrder($result['MerchantReference'])) {
+            if ($payments = $Order->Payments()) {
+                $payment = $payments->filter(array('MerchantReference' => $result['MerchantReference'], 'TransacID' => $result['TransactionRefNo']))->first();
+            }
+
             if ($Order->isOpen) {
 
                 if (!empty($Order->RecursiveFrequency)) {
@@ -38,29 +42,28 @@ class PoliController extends SaltedPaymentController
                     $Order->ValidUntil = date('Y-m-d', strtotime($today. ' + ' . $Order->RecursiveFrequency . ' days'));
                 }
 
-                if ($result['TransactionStatusCode'] == 'Status') {
+                if ($result['TransactionStatusCode'] == 'Completed') {
                     $Order->isOpen = false;
                     $Order->write();
                 }
 
-                $payment = new PoliPayment();
-                $payment->MerchantReference = $Order->MerchantReference;
-                $payment->PaidByID = $Order->CustomerID;
-                $payment->Amount->Currency = $Order->Amount->Currency;
-                $payment->IP = $Order->PaidFromIP;
-                $payment->ProxyIP = $Order->PaidFromProxyIP;
-                $payment->Amount->Amount = $result['AmountPaid'];
-                $payment->notify($result);
-
-            } elseif ($payments = $Order->Payments()) {
-                $payment = $payments->filter(array('MerchantReference' => $result['MerchantReference'], 'TransacID' => $result['TransactionRefNo']))->first();
                 if (empty($payment)) {
-                    return $this->httpError(400, 'cannot find the payment with the given merchant reference');
+                    $payment = new PoliPayment();
+                    $payment->MerchantReference = $Order->MerchantReference;
+                    $payment->PaidByID = $Order->CustomerID;
+                    $payment->Amount->Currency = $Order->Amount->Currency;
+                    $payment->IP = $Order->PaidFromIP;
+                    $payment->ProxyIP = $Order->PaidFromProxyIP;
+                    $payment->Amount->Amount = $result['AmountPaid'];
+                    $payment->notify($result);
                 }
+
             }
 
             $Order->onSaltedPaymentUpdate($payment->Status);
+            return $this->route_data($payment->Status, $Order->ID);
         }
-        return $this->route_data($payment->Status, $Order->ID);
+
+        return $this->httpError(400, 'Order not found');
     }
 }

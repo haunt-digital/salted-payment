@@ -167,7 +167,7 @@ class SaltedOrder extends DataObject
             return true;
         }
 
-        return $this->httpError(400, 'Payment gateway error');
+        return Controller::curr()->httpError(400, 'Payment gateway error');
     }
 
     public function onSaltedPaymentUpdate($success)
