@@ -48,7 +48,8 @@ class SaltedOrder extends DataObject
         'getStatus'             =>  'Open / Close',
         'PayDateDisplay'        =>  'Pay date',
         'Amount'                =>  'Amount',
-        'OutstandingBalance'    =>  'Outstanding Balance'
+        'OutstandingBalance'    =>  'Outstanding Balance',
+        'getCustomerFullName'   =>  'Customer'
     );
 
     /**
@@ -77,6 +78,15 @@ class SaltedOrder extends DataObject
             $timestamp = $created->format('YmdHisu');
             $this->MerchantReference = strtolower(sha1(md5($timestamp.'-'.session_id())));
         }
+    }
+
+    public function getCustomerFullName()
+    {
+        if ($this->Customer()->exists()) {
+            return $this->Customer()->FirstName . ' ' . $this->Customer()->Surname;
+        }
+
+        return '- visitor -';
     }
 
     /**
