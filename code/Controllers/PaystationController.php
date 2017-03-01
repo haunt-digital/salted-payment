@@ -43,76 +43,78 @@ class PaystationController extends SaltedPaymentController
 
     protected function handle_postback($data)
     {
-        if (!empty($data['ms']) && !empty($data['merchant_ref'])) {
+        if (!empty($data['ms'])) {
             // if it is just to setup a creditcard
-            if (!empty($data['ec']) && $data['ec'] == 34 && !empty(Member::currentUserID())) {
-                Paystation::create_card($data['cardno'], $data['cardexp'], $data['futurepaytoken'], Member::currentUserID());
-                return $this->route_data('CardSavedOnly', Member::currentUserID());
-            }
-
-            if ($Order = $this->getOrder($data['merchant_ref'])) {
-                if ($payments = $Order->Payments()) {
-                    $payment = $payments->filter(array('MerchantSession' => $data['ms']))->first();
+            if (empty($data['merchant_ref'])) {
+                if (!empty($data['ec']) && $data['ec'] == 34 && !empty(Member::currentUserID())) {
+                    Paystation::create_card($data['cardno'], $data['cardexp'], $data['futurepaytoken'], Member::currentUserID());
+                    return $this->route_data('CardSavedOnly', Member::currentUserID());
                 }
-
-                if ($Order->isOpen) {
-                    if (empty($payment)) {
-                        $payment = new PaystationPayment();
-                        $payment->MerchantReference = $Order->MerchantReference;
-                        $payment->MerchantSession = $Order->MerchantSession;
-                        $payment->PaidByID = $Order->CustomerID;
-                        $payment->Amount->Currency = $Order->Amount->Currency;
-                        $payment->IP = $Order->PaidFromIP;
-                        $payment->ProxyIP = $Order->PaidFromProxyIP;
-
-                        if (empty($data['ec']) || $data['ec'] == '0') {
-
-                            if (!empty($Order->RecursiveFrequency)) {
-                                $today = date("Y-m-d 00:00:00");
-                                $Order->ValidUntil                  =   date('Y-m-d', strtotime($today. ' + ' . $Order->RecursiveFrequency . ' days'));
-                            }
-
-                            $Order->isOpen                          =   false;
-                            $Order->write();
-
-                            $payment->TransacID                     =   $data['ti'];
-                            $payment->Amount->Amount                =   ((float) $data['am']) * 0.01;
-                            $payment->CardNumber                    =   $data['cardno'];
-                            $payment->CardExpiry                    =   $data['cardexp'];
-                            $payment->Status                        =   'Success';
-                            $payment->Message                       =   $data['em'];
-
-                            if (!empty($data['futurepaytoken'])) {
-                                $card = Paystation::create_card($data['cardno'], $data['cardexp'], $data['futurepaytoken'], $payment->PaidByID);
-                                $OrderClass                         =   SaltedPayment::get_default_order_class();
-                                $futureOrder                        =   $Order->duplicate(false);
-                                $futureOrder->MerchantReference     =   null;
-                                $futureOrder->MerchantSession       =   null;
-                                $futureOrder->isOpen                =   true;
-                                $futureOrder->ValidUntil            =   null;
-                                $futureOrder->WillbePaidByCardID    =   $card->ID;
-                                $futureOrder->PayDate               =   date('Y-m-d', strtotime($Order->ValidUntil. ' + 1 day'));
-                                $futureOrder->write();
-                            }
-
-                        } else {
-
-                            $payment->ExceptionError                =   $data['em'];
-                            if ($data['ec'] == 34) {
-                                $payment->Status                    =   'CardSavedOnly';
-                            } else {
-                                $payment->Status                    =   'Failure';
-                            }
-
-                        }
-
-                        $payment->write();
+            } else {
+                if ($Order = $this->getOrder($data['merchant_ref'])) {
+                    if ($payments = $Order->Payments()) {
+                        $payment = $payments->filter(array('MerchantSession' => $data['ms']))->first();
                     }
 
-                }
+                    if ($Order->isOpen) {
+                        if (empty($payment)) {
+                            $payment = new PaystationPayment();
+                            $payment->MerchantReference = $Order->MerchantReference;
+                            $payment->MerchantSession = $Order->MerchantSession;
+                            $payment->PaidByID = $Order->CustomerID;
+                            $payment->Amount->Currency = $Order->Amount->Currency;
+                            $payment->IP = $Order->PaidFromIP;
+                            $payment->ProxyIP = $Order->PaidFromProxyIP;
 
-                $Order->onSaltedPaymentUpdate($payment->Status);
-                return $this->route_data($payment->Status, $Order->ID);
+                            if (empty($data['ec']) || $data['ec'] == '0') {
+
+                                if (!empty($Order->RecursiveFrequency)) {
+                                    $today = date("Y-m-d 00:00:00");
+                                    $Order->ValidUntil                  =   date('Y-m-d', strtotime($today. ' + ' . $Order->RecursiveFrequency . ' days'));
+                                }
+
+                                $Order->isOpen                          =   false;
+                                $Order->write();
+
+                                $payment->TransacID                     =   $data['ti'];
+                                $payment->Amount->Amount                =   ((float) $data['am']) * 0.01;
+                                $payment->CardNumber                    =   $data['cardno'];
+                                $payment->CardExpiry                    =   $data['cardexp'];
+                                $payment->Status                        =   'Success';
+                                $payment->Message                       =   $data['em'];
+
+                                if (!empty($data['futurepaytoken'])) {
+                                    $card = Paystation::create_card($data['cardno'], $data['cardexp'], $data['futurepaytoken'], $payment->PaidByID);
+                                    $OrderClass                         =   SaltedPayment::get_default_order_class();
+                                    $futureOrder                        =   $Order->duplicate(false);
+                                    $futureOrder->MerchantReference     =   null;
+                                    $futureOrder->MerchantSession       =   null;
+                                    $futureOrder->isOpen                =   true;
+                                    $futureOrder->ValidUntil            =   null;
+                                    $futureOrder->WillbePaidByCardID    =   $card->ID;
+                                    $futureOrder->PayDate               =   date('Y-m-d', strtotime($Order->ValidUntil. ' + 1 day'));
+                                    $futureOrder->write();
+                                }
+
+                            } else {
+
+                                $payment->ExceptionError                =   $data['em'];
+                                if ($data['ec'] == 34) {
+                                    $payment->Status                    =   'CardSavedOnly';
+                                } else {
+                                    $payment->Status                    =   'Failure';
+                                }
+
+                            }
+
+                            $payment->write();
+                        }
+
+                    }
+
+                    $Order->onSaltedPaymentUpdate($payment->Status);
+                    return $this->route_data($payment->Status, $Order->ID);
+                }
             }
 
             return $this->httpError(400, 'Order not found');
