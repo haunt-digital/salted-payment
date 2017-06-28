@@ -171,6 +171,9 @@ class SaltedOrder extends DataObject
         if (!empty($pay_link)) {
             $this->write();
             if ($controller = Controller::curr()) {
+                if ($controller->request->isAjax()) {
+                    return $pay_link;
+                }
                 return $controller->redirect($pay_link);
             }
 
