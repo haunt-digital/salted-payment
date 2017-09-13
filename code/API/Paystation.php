@@ -41,6 +41,10 @@ class Paystation
         $params['pstn_mr']          =   $merchantRef;
         $params['pstn_ms']          =   $merchant_session;
 
+        if ($parames['pstn_tm'] == 'f') {
+            unset($parames['pstn_tm']);
+        }
+
         if (!empty($register_future_pay)) {
             $params['pstn_fp']      =   't';
             if (empty($immediate_future_pay)) {
